@@ -1,32 +1,18 @@
-name: SendIt CI/CD Pipeline
+name: SendIt API CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: sendit_test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -36,11 +22,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov httpx fastapi uvicorn sqlmodel psycopg2-binary alembic python-dotenv aiofiles slowapi "passlib[bcrypt]" "python-jose[cryptography]" psutil
+          pip install uv
+          uv pip install --system fastapi uvicorn sqlmodel psycopg2-binary alembic python-dotenv httpx aiofiles slowapi "passlib[bcrypt]==1.7.4" "bcrypt==4.0.1" "python-multipart>=0.0.32" "python-jose[cryptography]" psutil pytest pytest-cov
 
-      - name: Run Pytest Suite
+      - name: Run tests
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sendit_test_db
-          SECRET_KEY: test_secret_key_for_ci
+          PYTHONPATH: .
         run: |
-          pytest tests/ -v
+          pytest
